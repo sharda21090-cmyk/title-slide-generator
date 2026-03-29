@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supercoaching Title Slide Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span class="topbar-tb">testbook</span>
+      <span class="topbar-sc">Supercoaching</span>
+    </div>
+    <div class="topbar-divider"></div>
+    <span class="topbar-title">Title Slide Generator</span>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: Form -->
+    <div class="card">
+      <div class="card-title">Create a Title Slide</div>
+      <form id="slideForm" novalidate>
+
+        <div class="form-group">
+          <label>Course Name <span class="opt">(optional)</span></label>
+          <div class="sheet-select-wrap">
+            <input type="text" id="courseSearch" class="select-search"
+              placeholder="Search or type course name…" autocomplete="off" />
+            <select id="courseName" size="4" class="sheet-select hidden"></select>
+          </div>
+          <div id="courseSelected" class="selected-tag hidden"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Topic Title — English <span class="req">*</span></label>
+          <textarea id="titleEn" rows="2" placeholder="e.g. India's Engagement with Multipolar World" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Topic Title — Hindi <span class="opt">(optional)</span></label>
+          <textarea id="titleHi" rows="2" placeholder="e.g. बहुध्रुवीय विश्व के साथ भारत का जुड़ाव"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Faculty Name <span class="req">*</span></label>
+          <div class="sheet-select-wrap">
+            <input type="text" id="facultySearch" class="select-search"
+              placeholder="Search faculty name…" autocomplete="off" />
+            <select id="facultyName" size="4" class="sheet-select hidden"></select>
+          </div>
+          <div id="facultySelected" class="selected-tag hidden"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Experience <span class="opt">(auto-filled · editable)</span></label>
+          <input type="text" id="experience" placeholder="e.g. 15+ Years Experience" autocomplete="off" />
+        </div>
+
+        <div class="form-group">
+          <label>Logo <span class="opt">(optional)</span></label>
+          <div class="logo-select-wrap">
+            <select id="logoSelect"><option value="">— Loading logos… —</option></select>
+          </div>
+          <div class="logo-row">
+            <img id="logoThumb" class="logo-thumb" alt="Selected logo" />
+            <span class="logo-hint" id="logoHint">Select a logo to display on the slide.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">✦ Generate Google Slide</button>
+        <div id="status"></div>
+      </form>
+    </div>
+
+    <!-- RIGHT: Preview + How it works -->
+    <div class="preview-panel">
+      <div class="preview-card">
+        <div class="preview-label">Live Preview</div>
+        <div class="slide-outer">
+          <div class="slide-inner" id="slidePreview">
+
+            <div class="pv-logo" id="pvLogo"><img id="pvLogoImg" alt="" /></div>
+
+            <div class="pv-brand" id="pvBrand">
+              <div class="pv-brand-tb">testbook</div>
+              <div class="pv-brand-sc">Supercoaching</div>
+            </div>
+
+            <div class="pv-course hidden" id="pvCourse"></div>
+
+            <div class="pv-banner" id="pvBanner">
+              <div class="pv-title-en" id="pvEn">Topic title will appear here</div>
+              <div class="pv-title-hi hidden" id="pvHi"></div>
+            </div>
+
+            <div class="pv-right">
+              <div class="pv-photo" id="pvPhoto">
+                <img id="pvPhotoImg" alt="" />
+                <span class="pv-photo-icon" id="pvPhotoIcon">👤</span>
+              </div>
+            </div>
+
+            <div class="pv-faculty">
+              <div class="pv-faculty-name" id="pvName">Faculty Name</div>
+              <div class="pv-faculty-exp hidden" id="pvExp"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="how-card">
+        <div class="how-title">How it works</div>
+        <div class="step-list">
+          <div class="step-item"><div class="step-num">1</div><div class="step-text">Fill in the course name, topic title, and faculty details.</div></div>
+          <div class="step-item"><div class="step-num">2</div><div class="step-text">Watch the live preview update in real time as you type.</div></div>
+          <div class="step-item"><div class="step-num">3</div><div class="step-text">Click <strong>Generate Google Slide</strong> — your new presentation will open automatically in a new tab.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
