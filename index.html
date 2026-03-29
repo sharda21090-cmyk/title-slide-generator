@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supercoaching Title Slide Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink: #C0007A;
+      --pink-dark: #9a005f;
+      --pink-light: rgba(192,0,122,0.10);
+      --card-bg: #ffffff;
+      --border: #e8e4f0;
+      --input-bg: #f8f7fc;
+      --text-primary: #1a1a2e;
+      --text-secondary: #555;
+      --text-muted: #999;
+      --font: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      min-height: 100vh;
+      background: #f3f0f9;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 14px 56px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { width: 100%; max-width: 920px; }
+
+    /* ── Top bar ─────────────────────────────────── */
+    .topbar {
+      display: flex; align-items: center; gap: 14px;
+      padding: 0 2px 20px;
+    }
+    .topbar-logo { display: flex; flex-direction: column; line-height: 1.15; }
+    .topbar-tb { font-size: 10px; color: var(--text-muted); letter-spacing: 0.7px; font-weight: 500; }
+    .topbar-sc {
+      font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+      background: linear-gradient(130deg, #C0007A, #7a2be2);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .topbar-divider { width: 1px; height: 36px; background: linear-gradient(180deg, transparent, #d0c8e0, transparent); }
+    .topbar-title { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
+    /* ── Layout ──────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      body { padding: 16px 10px 40px; }
+    }
+
+    /* ── Card ────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(80,20,120,0.07);
+      padding: 28px 24px 24px;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 2px solid;
+      border-image: linear-gradient(90deg, var(--pink), #8a2be2) 1;
+    }
+
+    /* ── Form ────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--text-secondary); margin-bottom: 5px;
+    }
+    .req { color: var(--pink); margin-left: 2px; }
+    .opt { color: var(--text-muted); font-weight: 400; font-size: 10.5px; margin-left: 4px; }
+
+    input[type="text"], textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-family: var(--font);
+      color: var(--text-primary); background: var(--input-bg);
+      transition: border-color 0.18s, box-shadow 0.18s;
+      resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 3px rgba(192,0,122,0.12);
+      outline: none; background: #fff;
+    }
+    input::placeholder, textarea::placeholder { color: #c0b8d0; }
+    textarea { min-height: 52px; line-height: 1.5; }
+
+    /* Searchable dropdown */
+    .sheet-select-wrap { position: relative; }
+    .select-search {
+      width: 100%; padding: 10px 36px 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-family: var(--font);
+      color: var(--text-primary); cursor: pointer;
+      background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23C0007A' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    }
+    .select-search:focus {
+      border-color: var(--pink); box-shadow: 0 0 0 3px rgba(192,0,122,0.12);
+      outline: none; background-color: #fff;
+    }
+    .sheet-select {
+      position: absolute; top: calc(100% + 3px); left: 0; width: 100%; z-index: 99;
+      border: 1.5px solid var(--pink); border-radius: 8px;
+      background: #fff; font-size: 12.5px; font-family: var(--font);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+      max-height: 140px; overflow-y: auto; padding: 3px 0;
+    }
+    .sheet-select option { padding: 8px 12px; cursor: pointer; }
+    .sheet-select option:checked, .sheet-select option:hover { background: #fdf0f7; }
+    .sheet-select.hidden { display: none; }
+
+    .selected-tag {
+      display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+      padding: 4px 10px 4px 12px; background: #fdf0f7;
+      border: 1px solid rgba(192,0,122,0.18); border-radius: 20px;
+      font-size: 11.5px; font-weight: 600; color: var(--pink);
+    }
+    .selected-tag.hidden { display: none; }
+    .selected-tag button {
+      background: none; border: none; color: var(--pink);
+      font-size: 14px; cursor: pointer; padding: 0; line-height: 1;
+    }
+
+    /* Logo select */
+    .logo-select-wrap select {
+      width: 100%; padding: 10px 32px 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-family: var(--font); color: var(--text-primary);
+      background: var(--input-bg); appearance: none; -webkit-appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23C0007A' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .logo-select-wrap select:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(192,0,122,0.12); outline: none; }
+    .logo-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .logo-thumb {
+      width: 40px; height: 40px; border-radius: 50%; object-fit: contain;
+      border: 1.5px solid var(--border); background: #fafafa; flex-shrink: 0; display: none;
+    }
+    .logo-thumb.visible { display: block; }
+    .logo-hint { font-size: 11px; color: #b0a8c0; line-height: 1.4; }
+
+    /* Generate button */
+    .btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #C0007A, #9e005c);
+      color: #fff; font-size: 14px; font-weight: 700; font-family: var(--font);
+      border: none; border-radius: 9px; cursor: pointer; margin-top: 4px;
+      transition: transform 0.12s, box-shadow 0.2s;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(192,0,122,0.28); }
+    .btn:active:not(:disabled) { transform: scale(0.985); }
+    .btn:disabled { background: linear-gradient(135deg, #e0a0c9, #caaedc); cursor: not-allowed; }
+
+    .spinner {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 7px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Status */
+    #status { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+    #status.success { display: block; background: #edf7ee; color: #276c2d; border: 1.5px solid #a8d5aa; }
+    #status.error   { display: block; background: #fde8ed; color: #a81c2a; border: 1.5px solid #f4a0b0; }
+    #status a { color: var(--pink); font-weight: 700; text-decoration: none; }
+
+    /* ═══════════════════════════════════════════════
+       PREVIEW PANEL
+    ═══════════════════════════════════════════════ */
+    .preview-panel { display: flex; flex-direction: column; gap: 12px; }
+    .preview-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(80,20,120,0.07);
+      padding: 20px 20px 16px;
+    }
+    .preview-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: 0.9px; text-transform: uppercase; margin-bottom: 12px;
+    }
+
+    /* 16:9 container — padding-top trick for reliable sizing in iframes */
+    .slide-outer {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+    }
+    .slide-inner {
+      position: absolute; inset: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    /* All preview elements use absolute positioning.
+       Coordinates below are percentages of the slide container. */
+
+    .pv-logo {
+      position: absolute; bottom: 4%; left: 9%;
+      width: 15%; height: 9%;
+      display: none; /* shown when logo selected */
+    }
+    .pv-logo img { width: 100%; height: 100%; object-fit: contain; object-position: left center; }
+
+    .pv-brand {
+      position: absolute; bottom: 5%; left: 3%;
+      line-height: 1.15;
+    }
+    .pv-brand-tb { font-size: 8px; color: #999; }
+    .pv-brand-sc { font-size: 15px; font-weight: 800; color: var(--pink); }
+    .pv-brand.hidden { display: none; }
+
+    .pv-course {
+      position: absolute; top: 19%; left: 18%;
+      font-size: 13px; font-weight: 800; color: #6a1b9a;
+      max-width: 50%; line-height: 1.25;
+      word-wrap: break-word; overflow-wrap: break-word;
+      overflow: hidden; max-height: 12%;
+    }
+    .pv-course.hidden { display: none; }
+
+    /* Title banner — covers left side where EN/HI titles sit */
+    .pv-banner {
+      position: absolute; left: 0; top: 36%;
+      width: 68%;
+      max-height: 32%;        /* prevent banner from growing into other elements */
+      background: linear-gradient(135deg, #a01560, #80104e);
+      border-radius: 0 16px 16px 0;
+      padding: 2.5% 3% 2.5% 7%;
+      display: flex; flex-direction: column; justify-content: center; gap: 4px;
+      overflow: hidden;
+    }
+    .pv-title-en {
+      font-size: 13px; font-weight: 800; color: #fff;
+      line-height: 1.25; word-wrap: break-word; overflow-wrap: break-word;
+      overflow: hidden;
+    }
+    .pv-title-hi {
+      font-size: 11px; font-weight: 700; color: #FFD600;
+      line-height: 1.25; word-wrap: break-word; overflow-wrap: break-word;
+      overflow: hidden;
+    }
+    .pv-title-hi.hidden { display: none; }
+
+    /* Right panel — photo area, top 70% of right side */
+    .pv-right {
+      position: absolute; right: 0; top: 1.5%;
+      width: 30%; height: 69%;
+      background: #ece4f0;
+      border-radius: 0 0 0 12px;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pv-photo { position: relative; width: 100%; height: 100%; }
+    .pv-photo-icon {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px; opacity: 0.2;
+    }
+    .pv-photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: cover;
+      display: none;
+    }
+    .pv-photo img.visible { display: block; }
+
+    /* Faculty info — below photo area, right side */
+    .pv-faculty {
+      position: absolute; right: 0; top: 74%;
+      width: 28%; text-align: center;
+    }
+    .pv-faculty-name {
+      font-size: 11px; font-weight: 800; color: #d41b2c;
+      line-height: 1.15; word-wrap: break-word; overflow-wrap: break-word;
+      overflow: hidden;
+    }
+    .pv-faculty-exp {
+      font-size: 8px; font-weight: 600; color: #333;
+      margin-top: 3px; line-height: 1.2;
+    }
+    .pv-faculty-exp.hidden { display: none; }
+
+    /* How it works card */
+    .how-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(80,20,120,0.07);
+      padding: 18px 20px;
+    }
+    .how-title {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: 0.9px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .step-list { display: flex; flex-direction: column; gap: 10px; }
+    .step-item { display: flex; align-items: flex-start; gap: 10px; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(135deg, #C0007A, #8a2be2);
+      color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-text { font-size: 12px; color: var(--text-secondary); line-height: 1.45; padding-top: 2px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span class="topbar-tb">testbook</span>
+      <span class="topbar-sc">Supercoaching</span>
+    </div>
+    <div class="topbar-divider"></div>
+    <span class="topbar-title">Title Slide Generator</span>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: Form -->
+    <div class="card">
+      <div class="card-title">Create a Title Slide</div>
+      <form id="slideForm" novalidate>
+
+        <div class="form-group">
+          <label>Course Name <span class="opt">(optional)</span></label>
+          <div class="sheet-select-wrap">
+            <input type="text" id="courseSearch" class="select-search"
+              placeholder="Search or type course name…" autocomplete="off" />
+            <select id="courseName" size="4" class="sheet-select hidden"></select>
+          </div>
+          <div id="courseSelected" class="selected-tag hidden"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Topic Title — English <span class="req">*</span></label>
+          <textarea id="titleEn" rows="2" placeholder="e.g. India's Engagement with Multipolar World" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Topic Title — Hindi <span class="opt">(optional)</span></label>
+          <textarea id="titleHi" rows="2" placeholder="e.g. बहुध्रुवीय विश्व के साथ भारत का जुड़ाव"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Faculty Name <span class="req">*</span></label>
+          <div class="sheet-select-wrap">
+            <input type="text" id="facultySearch" class="select-search"
+              placeholder="Search faculty name…" autocomplete="off" />
+            <select id="facultyName" size="4" class="sheet-select hidden"></select>
+          </div>
+          <div id="facultySelected" class="selected-tag hidden"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Experience <span class="opt">(auto-filled · editable)</span></label>
+          <input type="text" id="experience" placeholder="e.g. 15+ Years Experience" autocomplete="off" />
+        </div>
+
+        <div class="form-group">
+          <label>Logo <span class="opt">(optional)</span></label>
+          <div class="logo-select-wrap">
+            <select id="logoSelect"><option value="">— Loading logos… —</option></select>
+          </div>
+          <div class="logo-row">
+            <img id="logoThumb" class="logo-thumb" alt="Selected logo" />
+            <span class="logo-hint" id="logoHint">Select a logo to display on the slide.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">✦ Generate Google Slide</button>
+        <div id="status"></div>
+      </form>
+    </div>
+
+    <!-- RIGHT: Preview + How it works -->
+    <div class="preview-panel">
+      <div class="preview-card">
+        <div class="preview-label">Live Preview</div>
+        <div class="slide-outer">
+          <div class="slide-inner" id="slidePreview">
+
+            <!-- Logo: hidden until selected -->
+            <div class="pv-logo" id="pvLogo"><img id="pvLogoImg" alt="" /></div>
+
+            <!-- Brand text: visible when no logo -->
+            <div class="pv-brand" id="pvBrand">
+              <div class="pv-brand-tb">testbook</div>
+              <div class="pv-brand-sc">Supercoaching</div>
+            </div>
+
+            <!-- Course name -->
+            <div class="pv-course hidden" id="pvCourse"></div>
+
+            <!-- Title banner -->
+            <div class="pv-banner" id="pvBanner">
+              <div class="pv-title-en" id="pvEn">Topic title will appear here</div>
+              <div class="pv-title-hi hidden" id="pvHi"></div>
+            </div>
+
+            <!-- Right column: photo area (top 70% of right side) -->
+            <div class="pv-right">
+              <div class="pv-photo" id="pvPhoto">
+                <img id="pvPhotoImg" alt="" />
+                <span class="pv-photo-icon" id="pvPhotoIcon">👤</span>
+              </div>
+            </div>
+
+            <!-- Faculty info: below photo, right side -->
+            <div class="pv-faculty">
+              <div class="pv-faculty-name" id="pvName">Faculty Name</div>
+              <div class="pv-faculty-exp hidden" id="pvExp"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="how-card">
+        <div class="how-title">How it works</div>
+        <div class="step-list">
+          <div class="step-item"><div class="step-num">1</div><div class="step-text">Fill in the course name, topic title, and faculty details.</div></div>
+          <div class="step-item"><div class="step-num">2</div><div class="step-text">Watch the live preview update in real time as you type.</div></div>
+          <div class="step-item"><div class="step-num">3</div><div class="step-text">Click <strong>Generate Google Slide</strong> — your new presentation will open automatically in a new tab.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script id="initialData" type="application/json"><?!= initialData ?></script>
+<script>
+(function() {
+  var INITIAL = JSON.parse(document.getElementById('initialData').textContent || '{}');
+  var selectedCourse = '', selectedFaculty = '', facultyMap = {};
+
+  var enInput    = document.getElementById('titleEn');
+  var hiInput    = document.getElementById('titleHi');
+  var expInput   = document.getElementById('experience');
+  var logoSelect = document.getElementById('logoSelect');
+
+  // ── Searchable dropdown ──────────────────────────
+  function buildDropdown(searchId, listId, tagId, items, onSelect) {
+    var search = document.getElementById(searchId);
+    var list   = document.getElementById(listId);
+    var tag    = document.getElementById(tagId);
+    var timer  = null, MAX = 120;
+
+    var indexed = (items || []).map(function(it) {
+      return { label: it.label, value: it.value, lc: (it.label || '').toLowerCase() };
+    });
+
+    function populate(q) {
+      list.innerHTML = '';
+      q = (q || '').toLowerCase();
+      var n = 0;
+      for (var i = 0; i < indexed.length && n < MAX; i++) {
+        if (!q || indexed[i].lc.indexOf(q) !== -1) {
+          var o = document.createElement('option');
+          o.value = indexed[i].value; o.textContent = indexed[i].label;
+          list.appendChild(o); n++;
+        }
+      }
+      if (n >= MAX) {
+        var m = document.createElement('option'); m.disabled = true;
+        m.textContent = 'Keep typing to narrow…'; list.appendChild(m);
+      }
+      list.classList.toggle('hidden', n === 0);
+    }
+
+    function pick(val, label) {
+      list.classList.add('hidden'); search.value = '';
+      tag.innerHTML = label + ' <button type="button" aria-label="Clear">\u00d7</button>';
+      tag.classList.remove('hidden'); onSelect(val, label);
+    }
+
+    function clear() {
+      tag.classList.add('hidden'); tag.innerHTML = '';
+      search.value = ''; list.classList.add('hidden'); onSelect('', '');
+    }
+
+    search.addEventListener('focus', function() { populate(search.value); });
+    search.addEventListener('input', function() { clearTimeout(timer); timer = setTimeout(function() { populate(search.value); }, 90); });
+    search.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && list.options.length) {
+        e.preventDefault(); var f = list.options[0];
+        if (f && !f.disabled) pick(f.value, f.textContent);
+      }
+    });
+    search.addEventListener('blur', function() { setTimeout(function() { list.classList.add('hidden'); }, 220); });
+    list.addEventListener('change', function() { var o = list.options[list.selectedIndex]; if (o && !o.disabled) pick(o.value, o.textContent); });
+    tag.addEventListener('click', function(e) { if (e.target.tagName === 'BUTTON') clear(); });
+  }
+
+  // ── Init dropdowns from embedded data ────────────
+  var courseItems = (INITIAL.courses || []).map(function(c) { return { label: c, value: c }; });
+  buildDropdown('courseSearch', 'courseName', 'courseSelected', courseItems, function(v) { selectedCourse = v; updatePreview(); });
+  document.getElementById('courseSearch').placeholder = courseItems.length ? 'Search ' + courseItems.length + ' courses…' : 'Type a course name';
+
+  var facItems = (INITIAL.faculties || []).map(function(f) {
+    facultyMap[f.name] = { experience: f.achievement || '', photo: f.photo || '' };
+    return { label: f.name, value: f.name };
+  });
+  buildDropdown('facultySearch', 'facultyName', 'facultySelected', facItems, function(v) {
+    selectedFaculty = v;
+    var img = document.getElementById('pvPhotoImg');
+    var icon = document.getElementById('pvPhotoIcon');
+    if (v && facultyMap[v]) {
+      expInput.value = facultyMap[v].experience || '';
+      var photo = (facultyMap[v].photo || '').trim();
+      if (photo) { img.src = photo; img.classList.add('visible'); icon.style.display = 'none'; }
+      else { img.classList.remove('visible'); img.src = ''; icon.style.display = ''; }
+    } else { img.classList.remove('visible'); img.src = ''; icon.style.display = ''; }
+    updatePreview();
+  });
+  document.getElementById('facultySearch').placeholder = facItems.length ? 'Search ' + facItems.length + ' faculty…' : 'Type faculty name';
+
+  // ── Load logos ───────────────────────────────────
+  google.script.run
+    .withSuccessHandler(function(r) {
+      logoSelect.innerHTML = '<option value="">— No logo —</option>';
+      if (r.logos && r.logos.length) {
+        r.logos.forEach(function(l) {
+          var o = document.createElement('option'); o.value = l.id; o.textContent = l.name;
+          logoSelect.appendChild(o);
+        });
+        document.getElementById('logoHint').textContent = r.logos.length + ' logo(s) available. Select one to preview.';
+      }
+    })
+    .withFailureHandler(function() { logoSelect.innerHTML = '<option value="">— No logo —</option>'; })
+    .getAvailableLogos();
+
+  logoSelect.addEventListener('change', function() {
+    var fid  = logoSelect.value;
+    var thumb  = document.getElementById('logoThumb');
+    var pvLogo = document.getElementById('pvLogo');
+    var pvImg  = document.getElementById('pvLogoImg');
+    var pvBrand = document.getElementById('pvBrand');
+
+    if (!fid) {
+      thumb.classList.remove('visible'); pvLogo.style.display = 'none';
+      pvBrand.classList.remove('hidden'); return;
+    }
+    pvBrand.classList.add('hidden');
+
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) {
+        thumb.src = res.dataUrl; thumb.classList.add('visible');
+        pvImg.src = res.dataUrl; pvLogo.style.display = 'block';
+      }
+    }).getLogoPreview(fid);
+  });
+
+  // ── Live preview ─────────────────────────────────
+
+  // Scale font size down proportionally when text exceeds `threshold` characters.
+  function _pvAutoSize(el, basePx, minPx, threshold) {
+    var len = (el.textContent || '').length;
+    if (len <= threshold) { el.style.fontSize = ''; return; }
+    var size = Math.max(minPx, Math.round(basePx * threshold / len * 10) / 10);
+    el.style.fontSize = size + 'px';
+  }
+
+  function updatePreview() {
+    var course = selectedCourse, en = enInput.value.trim(), hi = hiInput.value.trim();
+    var name = selectedFaculty, exp = expInput.value.trim();
+
+    var pvCourse = document.getElementById('pvCourse');
+    var pvEn     = document.getElementById('pvEn');
+    var pvHi     = document.getElementById('pvHi');
+    var pvName   = document.getElementById('pvName');
+    var pvExp    = document.getElementById('pvExp');
+
+    if (course) { pvCourse.textContent = course; pvCourse.classList.remove('hidden'); }
+    else { pvCourse.classList.add('hidden'); }
+
+    pvEn.textContent = en || 'Topic title will appear here';
+
+    if (hi) { pvHi.textContent = hi; pvHi.classList.remove('hidden'); }
+    else { pvHi.classList.add('hidden'); }
+
+    pvName.textContent = name || 'Faculty Name';
+    if (exp) { pvExp.textContent = exp; pvExp.classList.remove('hidden'); }
+    else { pvExp.classList.add('hidden'); }
+
+    // Auto-shrink preview font when text is long
+    _pvAutoSize(pvEn,   13, 7,  28);
+    _pvAutoSize(pvHi,   11, 6,  28);
+    _pvAutoSize(pvCourse, 13, 7, 28);
+    _pvAutoSize(pvName, 11, 7,  20);
+  }
+
+  [enInput, hiInput, expInput].forEach(function(el) { el.addEventListener('input', updatePreview); });
+  updatePreview();
+
+  // ── Form submit ──────────────────────────────────
+  document.getElementById('slideForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var titleEn     = enInput.value.trim();
+    var facultyName = selectedFaculty || document.getElementById('facultySearch').value.trim();
+
+    if (!titleEn) { showStatus('error', 'Please enter the topic title in English.'); enInput.focus(); return; }
+    if (!facultyName) { showStatus('error', 'Please select or type a faculty name.'); document.getElementById('facultySearch').focus(); return; }
+
+    var formData = {
+      courseName  : selectedCourse || document.getElementById('courseSearch').value.trim(),
+      titleEn     : titleEn,
+      titleHi     : hiInput.value.trim(),
+      facultyName : facultyName,
+      achievement : expInput.value.trim(),
+      facultyPhoto: (facultyMap[facultyName] && facultyMap[facultyName].photo) || '',
+      logoFileId  : logoSelect.value
+    };
+
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Generating slide…';
+    document.getElementById('status').className = '';
+    document.getElementById('status').style.display = '';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false; btn.innerHTML = '\u2726 Generate Google Slide';
+        if (result.success) {
+          var msg = '\u2705 Slide ready! <a href="' + result.url + '" target="_blank">Open Slide \u2192</a>';
+          if (result.pngUrl) msg += ' &nbsp;|&nbsp; <a href="' + result.pngUrl + '" target="_blank">Download PNG \u2192</a>';
+          showStatus('success', msg);
+        } else {
+          showStatus('error', '\u274c ' + result.error);
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false; btn.innerHTML = '\u2726 Generate Google Slide';
+        showStatus('error', '\u274c ' + (err.message || 'Something went wrong.'));
+      })
+      .generateTitleSlide(formData);
+  });
+
+  function showStatus(type, html) {
+    var el = document.getElementById('status');
+    el.className = type; el.innerHTML = html;
+  }
+})();
+</script>
+</body>
+</html>

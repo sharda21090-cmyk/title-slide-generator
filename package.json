@@ -1,0 +1,19 @@
+{
+  "name": "supercoaching-title-slide-generator",
+  "version": "1.0.0",
+  "description": "Supercoaching Title Slide Generator — Google Apps Script project managed with clasp",
+  "scripts": {
+    "push":           "clasp push",
+    "pull":           "clasp pull",
+    "open":           "clasp open",
+
+    "version":        "clasp version",
+    "version:create": "clasp version",
+    "versions":       "clasp versions",
+
+    "deploy":         "clasp deploy",
+    "deployments":    "clasp deployments",
+    "logs":           "clasp logs --watch"
+  },
+  "private": true
+}
