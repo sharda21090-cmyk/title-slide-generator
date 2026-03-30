@@ -293,48 +293,10 @@ function _stripHtml(html) {
 
 function _swapImage(slide, element, blob) {
   if (!element || !blob) return;
-  
-  // Get placeholder dimensions
-  var placeholderLeft = element.getLeft();
-  var placeholderTop = element.getTop();
-  var placeholderWidth = element.getWidth();
-  var placeholderHeight = element.getHeight();
-  
-  // Remove placeholder
+  var l = element.getLeft(), t = element.getTop();
+  var w = element.getWidth(), h = element.getHeight();
   element.remove();
-  
-  // Insert image at position (will use natural size initially)
-  var newImage = slide.insertImage(blob, placeholderLeft, placeholderTop);
-  
-  // Get natural dimensions
-  var naturalWidth = newImage.getWidth();
-  var naturalHeight = newImage.getHeight();
-  
-  // Calculate aspect ratios
-  var targetRatio = placeholderWidth / placeholderHeight;
-  var imageRatio = naturalWidth / naturalHeight;
-  
-  // Scale to fit within bounds while maintaining aspect ratio
-  var finalWidth, finalHeight;
-  if (imageRatio > targetRatio) {
-    // Image is wider - fit to width
-    finalWidth = placeholderWidth;
-    finalHeight = placeholderWidth / imageRatio;
-  } else {
-    // Image is taller - fit to height
-    finalHeight = placeholderHeight;
-    finalWidth = placeholderHeight * imageRatio;
-  }
-  
-  // Center the image in the placeholder area
-  var finalLeft = placeholderLeft + (placeholderWidth - finalWidth) / 2;
-  var finalTop = placeholderTop + (placeholderHeight - finalHeight) / 2;
-  
-  // Apply final dimensions and position
-  newImage.setLeft(finalLeft);
-  newImage.setTop(finalTop);
-  newImage.setWidth(finalWidth);
-  newImage.setHeight(finalHeight);
+  slide.insertImage(blob, l, t, w, h);
 }
 
 function _exportPng(presId, slideId) {

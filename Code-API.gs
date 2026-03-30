@@ -242,7 +242,7 @@ function generateTitleSlide(formData) {
         if (photoBlob) {
           var photoElement = el[EL.PHOTO];
           if (photoElement) {
-            // Get placeholder dimensions
+            // Get dimensions before swap
             var photoLeft = photoElement.getLeft();
             var photoTop = photoElement.getTop();
             var photoWidth = photoElement.getWidth();
@@ -251,40 +251,14 @@ function generateTitleSlide(formData) {
             // Remove placeholder
             photoElement.remove();
             
-            // Insert image at position (will use natural size initially)
-            var newPhoto = slide.insertImage(photoBlob, photoLeft, photoTop);
+            // Insert and constrain to original size
+            var newPhoto = slide.insertImage(photoBlob, photoLeft, photoTop, photoWidth, photoHeight);
+            newPhoto.setLeft(photoLeft);
+            newPhoto.setTop(photoTop);
+            newPhoto.setWidth(photoWidth);
+            newPhoto.setHeight(photoHeight);
             
-            // Get natural dimensions
-            var naturalWidth = newPhoto.getWidth();
-            var naturalHeight = newPhoto.getHeight();
-            
-            // Calculate aspect ratios
-            var targetRatio = photoWidth / photoHeight;
-            var imageRatio = naturalWidth / naturalHeight;
-            
-            // Scale to fit within bounds while maintaining aspect ratio
-            var finalWidth, finalHeight;
-            if (imageRatio > targetRatio) {
-              // Image is wider - fit to width
-              finalWidth = photoWidth;
-              finalHeight = photoWidth / imageRatio;
-            } else {
-              // Image is taller - fit to height
-              finalHeight = photoHeight;
-              finalWidth = photoHeight * imageRatio;
-            }
-            
-            // Center the image in the placeholder area
-            var finalLeft = photoLeft + (photoWidth - finalWidth) / 2;
-            var finalTop = photoTop + (photoHeight - finalHeight) / 2;
-            
-            // Apply final dimensions and position
-            newPhoto.setLeft(finalLeft);
-            newPhoto.setTop(finalTop);
-            newPhoto.setWidth(finalWidth);
-            newPhoto.setHeight(finalHeight);
-            
-            Logger.log('Faculty photo swapped successfully with aspect ratio preserved');
+            Logger.log('Faculty photo swapped successfully');
           } else {
             Logger.log('Photo element not found');
           }
@@ -370,52 +344,13 @@ function _swapImage(slide, element, blob) {
     return null;
   }
   try {
-    // Get placeholder dimensions
-    var placeholderLeft = element.getLeft();
-    var placeholderTop = element.getTop();
-    var placeholderWidth = element.getWidth();
-    var placeholderHeight = element.getHeight();
+    var l = element.getLeft(), t = element.getTop();
+    var w = element.getWidth(), h = element.getHeight();
     var oldId = element.getObjectId();
-    
-    Logger.log('Swapping element ' + oldId + ' at L:' + placeholderLeft + ' T:' + placeholderTop);
-    
-    // Remove placeholder
+    Logger.log('Swapping element ' + oldId + ' at L:' + l + ' T:' + t);
     element.remove();
-    
-    // Insert image at position (will use natural size initially)
-    var newImage = slide.insertImage(blob, placeholderLeft, placeholderTop);
-    
-    // Get natural dimensions
-    var naturalWidth = newImage.getWidth();
-    var naturalHeight = newImage.getHeight();
-    
-    // Calculate aspect ratios
-    var targetRatio = placeholderWidth / placeholderHeight;
-    var imageRatio = naturalWidth / naturalHeight;
-    
-    // Scale to fit within bounds while maintaining aspect ratio
-    var finalWidth, finalHeight;
-    if (imageRatio > targetRatio) {
-      // Image is wider - fit to width
-      finalWidth = placeholderWidth;
-      finalHeight = placeholderWidth / imageRatio;
-    } else {
-      // Image is taller - fit to height
-      finalHeight = placeholderHeight;
-      finalWidth = placeholderHeight * imageRatio;
-    }
-    
-    // Center the image in the placeholder area
-    var finalLeft = placeholderLeft + (placeholderWidth - finalWidth) / 2;
-    var finalTop = placeholderTop + (placeholderHeight - finalHeight) / 2;
-    
-    // Apply final dimensions and position
-    newImage.setLeft(finalLeft);
-    newImage.setTop(finalTop);
-    newImage.setWidth(finalWidth);
-    newImage.setHeight(finalHeight);
-    
-    Logger.log('Inserted new image with aspect ratio preserved, ID: ' + newImage.getObjectId());
+    var newImage = slide.insertImage(blob, l, t, w, h);
+    Logger.log('Inserted new image, ID: ' + newImage.getObjectId());
     return newImage;
   } catch (e) {
     Logger.log('_swapImage error: ' + e.message);
