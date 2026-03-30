@@ -146,19 +146,27 @@ function stripHtml(html) {
   
   let text = html.toString();
   
-  // Convert common HTML elements to preserve structure
-  text = text.replace(/<br\s*\/?>/gi, '\n');           // <br> to newline
-  text = text.replace(/<\/p>/gi, '\n\n');              // </p> to double newline
-  text = text.replace(/<p[^>]*>/gi, '');               // Remove <p> tags
-  text = text.replace(/<ul[^>]*>/gi, '\n');            // <ul> to newline (start list)
-  text = text.replace(/<ol[^>]*>/gi, '\n');            // <ol> to newline (start list)
-  text = text.replace(/<li[^>]*>/gi, '• ');            // <li> to bullet (newline comes from </li>)
-  text = text.replace(/<\/li>/gi, '\n');               // </li> to newline
-  text = text.replace(/<\/ul>/gi, '\n');               // </ul> to newline
-  text = text.replace(/<\/ol>/gi, '\n');               // </ol> to newline
-  text = text.replace(/<[^>]*>/g, '');                 // Remove remaining tags
+  // First, handle list items - add newline before each bullet
+  text = text.replace(/<li[^>]*>/gi, '\n• ');
+  text = text.replace(/<\/li>/gi, '');
   
-  // Decode HTML entities (common ones)
+  // Handle other block elements
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n');
+  text = text.replace(/<p[^>]*>/gi, '');
+  text = text.replace(/<ul[^>]*>/gi, '');
+  text = text.replace(/<\/ul>/gi, '');
+  text = text.replace(/<ol[^>]*>/gi, '');
+  text = text.replace(/<\/ol>/gi, '');
+  
+  // Remove all remaining HTML tags
+  text = text.replace(/<[^>]*>/g, '');
+  
+  // Decode ALL HTML entities using a more comprehensive approach
+  text = text.replace(/&rsquo;/gi, "'");
+  text = text.replace(/&lsquo;/gi, "'");
+  text = text.replace(/&rdquo;/gi, '"');
+  text = text.replace(/&ldquo;/gi, '"');
   text = text.replace(/&nbsp;/gi, ' ');
   text = text.replace(/&amp;/gi, '&');
   text = text.replace(/&lt;/gi, '<');
@@ -166,10 +174,6 @@ function stripHtml(html) {
   text = text.replace(/&quot;/gi, '"');
   text = text.replace(/&#39;/gi, "'");
   text = text.replace(/&apos;/gi, "'");
-  text = text.replace(/&rsquo;/gi, "'");
-  text = text.replace(/&lsquo;/gi, "'");
-  text = text.replace(/&rdquo;/gi, '"');
-  text = text.replace(/&ldquo;/gi, '"');
   text = text.replace(/&bull;/gi, '•');
   text = text.replace(/&ndash;/gi, '–');
   text = text.replace(/&mdash;/gi, '—');
@@ -178,6 +182,15 @@ function stripHtml(html) {
   text = text.replace(/&#(\d+);/g, function(match, dec) {
     return String.fromCharCode(dec);
   });
+  
+  // Clean up whitespace
+  text = text.replace(/[ \t]+/g, ' ');        // Multiple spaces to single
+  text = text.replace(/\n[ \t]+/g, '\n');     // Remove spaces after newline
+  text = text.replace(/[ \t]+\n/g, '\n');     // Remove spaces before newline
+  text = text.replace(/\n{3,}/g, '\n\n');     // Max 2 newlines
+  
+  return text.trim();
+}
   
   // Clean up excessive whitespace but preserve single newlines
   text = text.replace(/[ \t]+/g, ' ');                 // Multiple spaces/tabs to single space
