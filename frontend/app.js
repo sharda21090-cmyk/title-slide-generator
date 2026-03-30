@@ -140,21 +140,38 @@ function pvAutoSize(el, basePx, minPx, threshold) {
   el.style.fontSize = size + 'px';
 }
 
-// Strip HTML tags and entities
+// Strip HTML tags and entities while preserving newlines and bullets
 function stripHtml(html) {
   if (!html) return '';
   
-  // Create a temporary div to parse HTML
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
+  let text = html.toString();
   
-  // Get text content (automatically strips all HTML)
-  let text = temp.textContent || temp.innerText || '';
+  // Convert common HTML elements to preserve structure
+  text = text.replace(/<br\s*\/?>/gi, '\n');           // <br> to newline
+  text = text.replace(/<\/p>/gi, '\n');                // </p> to newline
+  text = text.replace(/<p[^>]*>/gi, '');               // Remove <p> tags
+  text = text.replace(/<li[^>]*>/gi, '• ');            // <li> to bullet
+  text = text.replace(/<\/li>/gi, '\n');               // </li> to newline
+  text = text.replace(/<\/ul>/gi, '\n');               // </ul> to newline
+  text = text.replace(/<\/ol>/gi, '\n');               // </ol> to newline
+  text = text.replace(/<[^>]*>/g, '');                 // Remove remaining tags
   
-  // Clean up extra whitespace
-  text = text.replace(/\s+/g, ' ').trim();
+  // Decode HTML entities
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&apos;/g, "'");
+  text = text.replace(/&bull;/g, '•');
   
-  return text;
+  // Clean up excessive whitespace but preserve single newlines
+  text = text.replace(/[ \t]+/g, ' ');                 // Multiple spaces/tabs to single space
+  text = text.replace(/\n\s+/g, '\n');                 // Remove spaces after newlines
+  text = text.replace(/\n{3,}/g, '\n\n');              // Max 2 consecutive newlines
+  
+  return text.trim();
 }
 
 // Update preview

@@ -309,7 +309,18 @@ function _setText(element, text) {
 function _stripHtml(html) {
   if (!html) return '';
   var text = html.toString();
-  text = text.replace(/<[^>]*>/g, '');
+  
+  // Convert common HTML elements to preserve structure
+  text = text.replace(/<br\s*\/?>/gi, '\n');           // <br> to newline
+  text = text.replace(/<\/p>/gi, '\n');                // </p> to newline
+  text = text.replace(/<p[^>]*>/gi, '');               // Remove <p> tags
+  text = text.replace(/<li[^>]*>/gi, '• ');            // <li> to bullet
+  text = text.replace(/<\/li>/gi, '\n');               // </li> to newline
+  text = text.replace(/<\/ul>/gi, '\n');               // </ul> to newline
+  text = text.replace(/<\/ol>/gi, '\n');               // </ol> to newline
+  text = text.replace(/<[^>]*>/g, '');                 // Remove remaining tags
+  
+  // Decode HTML entities
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -317,7 +328,13 @@ function _stripHtml(html) {
   text = text.replace(/&quot;/g, '"');
   text = text.replace(/&#39;/g, "'");
   text = text.replace(/&apos;/g, "'");
-  text = text.replace(/\s+/g, ' ');
+  text = text.replace(/&bull;/g, '•');
+  
+  // Clean up excessive whitespace but preserve single newlines
+  text = text.replace(/[ \t]+/g, ' ');                 // Multiple spaces/tabs to single space
+  text = text.replace(/\n\s+/g, '\n');                 // Remove spaces after newlines
+  text = text.replace(/\n{3,}/g, '\n\n');              // Max 2 consecutive newlines
+  
   return text.trim();
 }
 
