@@ -150,8 +150,8 @@ function stripHtml(html) {
   text = text.replace(/<br\s*\/?>/gi, '\n');           // <br> to newline
   text = text.replace(/<\/p>/gi, '\n');                // </p> to newline
   text = text.replace(/<p[^>]*>/gi, '');               // Remove <p> tags
-  text = text.replace(/<li[^>]*>/gi, '• ');            // <li> to bullet
-  text = text.replace(/<\/li>/gi, '\n');               // </li> to newline
+  text = text.replace(/<li[^>]*>/gi, '\n• ');          // <li> to newline + bullet
+  text = text.replace(/<\/li>/gi, '');                 // Remove </li>
   text = text.replace(/<\/ul>/gi, '\n');               // </ul> to newline
   text = text.replace(/<\/ol>/gi, '\n');               // </ol> to newline
   text = text.replace(/<[^>]*>/g, '');                 // Remove remaining tags
