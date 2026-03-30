@@ -112,7 +112,10 @@ function getFormOptions() {
     var crsData = crsResp.values || [];
     for (var j = 0; j < crsData.length; j++) {
       var c = (crsData[j][0] || '').toString().trim();
-      if (c) courses.push(c);
+      // Filter out courses with "(Removed Course)" at the end
+      if (c && !c.match(/\(Removed Course\)\s*$/i)) {
+        courses.push(c);
+      }
     }
 
     var result = { success: true, faculties: faculties, courses: courses };
