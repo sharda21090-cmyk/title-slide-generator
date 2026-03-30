@@ -154,8 +154,10 @@ function generateTitleSlide(formData) {
     var experience   = (formData.achievement   || formData.experience || '').trim();
     var facultyPhoto = (formData.facultyPhoto || '').trim();
 
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+    var fileName = facultyName + '_' + timestamp;
     var copy  = DriveApp.getFileById(TEMPLATE_PRESENTATION_ID)
-                        .makeCopy('Supercoaching – ' + titleEn);
+                        .makeCopy(fileName);
     var pres  = SlidesApp.openById(copy.getId());
     var slide = _findSlide(pres, TEMPLATE_SLIDE_ID) || pres.getSlides()[0];
 
@@ -231,11 +233,13 @@ function generateTitleSlide(formData) {
     if (folder) { folder.addFile(copy); DriveApp.getRootFolder().removeFile(copy); }
 
     var pngUrl = _exportPng(presId, slideId);
+    var pptxUrl = _exportPptx(presId);
 
     return {
       success: true,
       url: 'https://docs.google.com/presentation/d/' + presId + '/edit',
       pngUrl: pngUrl,
+      pptxUrl: pptxUrl,
       presentationId: presId
     };
   } catch (e) {
@@ -276,8 +280,17 @@ function _swapImage(slide, element, blob) {
 }
 
 function _exportPng(presId, slideId) {
+  // Export at high resolution for PowerPoint (16:9 aspect ratio)
+  // Using size parameter to ensure proper dimensions
   return 'https://docs.google.com/presentation/d/' + presId +
-         '/export/png?pageid=' + encodeURIComponent(slideId);
+         '/export/png?id=' + presId + 
+         '&pageid=' + encodeURIComponent(slideId) +
+         '&size=1920,1080';
+}
+
+function _exportPptx(presId) {
+  // Export as PowerPoint file - maintains exact slide dimensions
+  return 'https://docs.google.com/presentation/d/' + presId + '/export/pptx';
 }
 
 function _fetchImageBlob(ref) {
@@ -321,7 +334,12 @@ function _setTextAutoFit(presId, objectIds) {
         return {
           updateShapeProperties: {
             objectId: id,
-            shapeProperties: { autofit: { autofitType: 'TEXT_AUTOFIT' } },
+            shapeProperties: { 
+              autofit: { 
+                autofitType: 'SHAPE_AUTOFIT',
+                fontScale: 1.0
+              } 
+            },
             fields: 'autofit'
           }
         };

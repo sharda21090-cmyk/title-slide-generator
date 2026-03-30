@@ -164,15 +164,12 @@ function generateTitleSlide(formData) {
     Logger.log('  - Experience: ' + experience);
     Logger.log('  - Photo URL: ' + facultyPhoto);
     Logger.log('  - Logo File ID: ' + (formData.logoFileId || 'none'));
-    
-    // Limit experience length to prevent overflow
-    if (experience.length > 150) {
-      experience = experience.substring(0, 147) + '...';
-    }
 
     Logger.log('Creating presentation copy...');
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+    var fileName = facultyName + '_' + timestamp;
     var copy  = DriveApp.getFileById(TEMPLATE_PRESENTATION_ID)
-                        .makeCopy('Supercoaching - ' + titleEn);
+                        .makeCopy(fileName);
     var pres  = SlidesApp.openById(copy.getId());
     var slide = _findSlide(pres, TEMPLATE_SLIDE_ID) || pres.getSlides()[0];
 
@@ -283,11 +280,13 @@ function generateTitleSlide(formData) {
     if (folder) { folder.addFile(copy); DriveApp.getRootFolder().removeFile(copy); }
 
     var pngUrl = _exportPng(presId, slideId);
+    var pptxUrl = _exportPptx(presId);
 
     return {
       success: true,
       url: 'https://docs.google.com/presentation/d/' + presId + '/edit',
       pngUrl: pngUrl,
+      pptxUrl: pptxUrl,
       presentationId: presId
     };
   } catch (e) {
@@ -340,8 +339,17 @@ function _swapImage(slide, element, blob) {
 }
 
 function _exportPng(presId, slideId) {
+  // Export at high resolution for PowerPoint (16:9 aspect ratio)
+  // Using size parameter to ensure proper dimensions
   return 'https://docs.google.com/presentation/d/' + presId +
-         '/export/png?pageid=' + encodeURIComponent(slideId);
+         '/export/png?id=' + presId + 
+         '&pageid=' + encodeURIComponent(slideId) +
+         '&size=1920,1080';
+}
+
+function _exportPptx(presId) {
+  // Export as PowerPoint file - maintains exact slide dimensions
+  return 'https://docs.google.com/presentation/d/' + presId + '/export/pptx';
 }
 
 function _fetchImageBlob(ref) {
@@ -422,10 +430,11 @@ function _setTextAutoFit(presId, objectIds) {
             objectId: id,
             shapeProperties: { 
               autofit: { 
-                autofitType: 'SHAPE_AUTOFIT' 
+                autofitType: 'SHAPE_AUTOFIT',
+                fontScale: 1.0
               } 
             },
-            fields: 'shapeProperties.autofit'
+            fields: 'autofit'
           }
         };
       });

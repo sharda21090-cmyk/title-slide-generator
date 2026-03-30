@@ -163,6 +163,7 @@ function updatePreview() {
   const en = enInput.value.trim();
   const hi = hiInput.value.trim();
   const name = selectedFaculty;
+  // Strip HTML from experience for preview display
   const exp = stripHtml(expInput.value.trim());
 
   const pvCourse = document.getElementById('pvCourse');
@@ -227,12 +228,11 @@ async function init() {
 
       // Setup faculty dropdown
       const facItems = (data.faculties || []).map(f => {
-        // Strip HTML and limit experience length
+        // Strip HTML but don't truncate - let autofit handle it
         const cleanExp = stripHtml(f.achievement || '');
-        const limitedExp = cleanExp.length > 150 ? cleanExp.substring(0, 147) + '...' : cleanExp;
         
         facultyMap[f.name] = {
-          experience: limitedExp,
+          experience: cleanExp,
           photo: f.photo || ''
         };
         return { label: f.name, value: f.name };
@@ -244,7 +244,7 @@ async function init() {
         const icon = document.getElementById('pvPhotoIcon');
         
         if (v && facultyMap[v]) {
-          // Experience is already cleaned and limited
+          // Use full experience text - autofit will handle sizing
           expInput.value = facultyMap[v].experience || '';
           let photo = (facultyMap[v].photo || '').trim();
           
@@ -384,6 +384,9 @@ document.getElementById('slideForm').addEventListener('submit', async (e) => {
     
     if (result.success) {
       let msg = `✅ Slide ready! <a href="${result.url}" target="_blank">Open Slide →</a>`;
+      if (result.pptxUrl) {
+        msg += ` &nbsp;|&nbsp; <a href="${result.pptxUrl}" download>Download PowerPoint →</a>`;
+      }
       if (result.pngUrl) {
         msg += ` &nbsp;|&nbsp; <a href="${result.pngUrl}" target="_blank">Download PNG →</a>`;
       }
