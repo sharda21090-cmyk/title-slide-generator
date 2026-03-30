@@ -5,7 +5,7 @@
  * Deploy as Web App with "Execute as: Me" and "Access: Anyone"
  */
 
-// ── CONFIG ──────────────────────────────────────────────────
+// CONFIG
 var SPREADSHEET_ID           = '1CpgtjeKNxhQmqKSkqnwe-IHZmjI1ENypBAyClxjbkUs';
 var FACULTY_SHEET            = 'FacultyData';
 var COURSE_SHEET             = 'AllCourse';
@@ -24,11 +24,11 @@ var EL = {
 };
 
 var BUILT_IN_LOGOS = [
-  { name: 'Supercoaching',  id: '1yHVsmLTkq85UGZskdFo_SgShx4xCVFF4' },
-  { name: 'Superpass Live', id: '1bYWWZNbCVxt6ZC--fLnYG0foeYKwPHrB' }
+  { name: 'Supercoaching',  id: '1uk0WDNEixfIVXiVFKC74RIZqN_ZyJBHT' },
+  { name: 'Superpass Live', id: '1yHVsmLTkq85UGZskdFo_SgShx4xCVFF4' }
 ];
 
-// ── API ENDPOINTS ───────────────────────────────────────────
+// API ENDPOINTS
 
 function doGet(e) {
   return ContentService.createTextOutput(JSON.stringify({
@@ -58,6 +58,9 @@ function doPost(e) {
         var formData = JSON.parse(e.parameter.data || '{}');
         result = generateTitleSlide(formData);
         break;
+      case 'diagnoseTemplate':
+        result = { success: true, message: diagnoseTemplateElements() };
+        break;
       default:
         result = { success: false, error: 'Unknown action: ' + action };
     }
@@ -73,7 +76,7 @@ function doPost(e) {
   }
 }
 
-// ── SHEET DATA (cached 6 h) ────────────────────────────────
+// SHEET DATA (cached 6 h)
 function getFormOptions() {
   var cache  = CacheService.getScriptCache();
   var cached = cache.get('formOptions_v3');
@@ -91,7 +94,7 @@ function getFormOptions() {
       var k = (header[h] || '').toString().trim().toLowerCase();
       if (k === 'name' || k === 'faculty name' || k === '_id') nameIdx = h;
       if (k === 'photo' || k === 'faculty photo' || k === 'image') photoIdx = h;
-      if (k === 'achievement') achievementIdx = h;
+      if (k === 'achievement' || k === 'experience' || k === 'achievements') achievementIdx = h;
     }
 
     var faculties = [];
@@ -126,7 +129,7 @@ function clearFormOptionsCache() {
   Logger.log('Cache cleared.');
 }
 
-// ── LOGOS ───────────────────────────────────────────────────
+// LOGOS
 function getAvailableLogos() {
   return { logos: BUILT_IN_LOGOS.slice() };
 }
@@ -144,52 +147,137 @@ function getLogoPreview(fileId) {
   }
 }
 
-// ── GENERATE SLIDE ──────────────────────────────────────────
+// GENERATE SLIDE
 function generateTitleSlide(formData) {
   try {
-    var titleEn      = (formData.titleEn      || '').trim() || 'Untitled Topic';
-    var titleHi      = (formData.titleHi      || '').trim();
-    var courseName   = (formData.courseName   || '').trim();
-    var facultyName  = (formData.facultyName  || '').trim() || 'Faculty';
-    var experience   = (formData.achievement   || formData.experience || '').trim();
+    Logger.log('=== GENERATE TITLE SLIDE START ===');
+    Logger.log('Received formData: ' + JSON.stringify(formData));
+    
+    var titleEn      = (formData.titleEn || '').trim() || 'Untitled Topic';
+    var titleHi      = (formData.titleHi || '').trim();
+    var courseName   = (formData.courseName || '').trim();
+    var facultyName  = (formData.facultyName || '').trim() || 'Faculty';
+    var experience   = (formData.achievement || formData.experience || '').trim();
     var facultyPhoto = (formData.facultyPhoto || '').trim();
+    
+    Logger.log('Parsed values:');
+    Logger.log('  - Experience: ' + experience);
+    Logger.log('  - Photo URL: ' + facultyPhoto);
+    Logger.log('  - Logo File ID: ' + (formData.logoFileId || 'none'));
+    
+    // Limit experience length to prevent overflow
+    if (experience.length > 150) {
+      experience = experience.substring(0, 147) + '...';
+    }
 
+    Logger.log('Creating presentation copy...');
     var copy  = DriveApp.getFileById(TEMPLATE_PRESENTATION_ID)
-                        .makeCopy('Supercoaching – ' + titleEn);
+                        .makeCopy('Supercoaching - ' + titleEn);
     var pres  = SlidesApp.openById(copy.getId());
     var slide = _findSlide(pres, TEMPLATE_SLIDE_ID) || pres.getSlides()[0];
 
+    Logger.log('Removing extra slides...');
     var slides = pres.getSlides();
     for (var i = slides.length - 1; i >= 0; i--) {
       if (slides[i].getObjectId() !== slide.getObjectId()) slides[i].remove();
     }
 
+    Logger.log('Building element map...');
+    // Build element map
     var el = {};
     slide.getPageElements().forEach(function(e) { el[e.getObjectId()] = e; });
+    
+    Logger.log('Elements found:');
+    Logger.log('  - COURSE_NAME: ' + !!el[EL.COURSE_NAME]);
+    Logger.log('  - TITLE_EN: ' + !!el[EL.TITLE_EN]);
+    Logger.log('  - TITLE_HI: ' + !!el[EL.TITLE_HI]);
+    Logger.log('  - FACULTY_NAME: ' + !!el[EL.FACULTY_NAME]);
+    Logger.log('  - EXPERIENCE: ' + !!el[EL.EXPERIENCE]);
+    Logger.log('  - LOGO: ' + !!el[EL.LOGO]);
+    Logger.log('  - PHOTO: ' + !!el[EL.PHOTO]);
 
+    // Update text elements
     _setText(el[EL.COURSE_NAME],  courseName);
     _setText(el[EL.TITLE_EN],     titleEn);
     _setText(el[EL.TITLE_HI],     titleHi);
     _setText(el[EL.FACULTY_NAME], facultyName);
-    _setText(el[EL.EXPERIENCE],   experience);
-
-    if (formData.logoFileId) {
-      _swapImage(slide, el[EL.LOGO], DriveApp.getFileById(formData.logoFileId).getBlob());
+    
+    // EXPERIENCE Fallback - track actual element ID used
+    var expElement = el[EL.EXPERIENCE];
+    var expElementId = EL.EXPERIENCE;
+    if (!expElement) {
+      Logger.log('Experience element ID not found, searching by position...');
+      var elements = slide.getPageElements();
+      for (var i = 0; i < elements.length; i++) {
+        if (elements[i].getPageElementType() == SlidesApp.PageElementType.SHAPE) {
+          var t = elements[i].getTop();
+          var l = elements[i].getLeft();
+          if (t > 280 && l > 420) {
+            expElement = elements[i];
+            expElementId = elements[i].getObjectId();
+            Logger.log('Found experience element at T:' + t + ' L:' + l);
+            break;
+          }
+        }
+      }
     }
+    _setText(expElement, experience);
 
-    if (facultyPhoto) {
-      var photoBlob = _fetchImageBlob(facultyPhoto);
-      if (photoBlob) {
-        var ph = el[EL.PHOTO];
-        if (ph) slide.insertImage(photoBlob, ph.getLeft(), ph.getTop(), ph.getWidth(), ph.getHeight());
+    // Swap logo if provided
+    if (formData.logoFileId) {
+      Logger.log('Swapping logo with file ID: ' + formData.logoFileId);
+      try {
+        var logoBlob = DriveApp.getFileById(formData.logoFileId).getBlob();
+        _swapImage(slide, el[EL.LOGO], logoBlob);
+      } catch (e) {
+        Logger.log('Logo swap failed: ' + e.message);
       }
     }
 
-    pres.saveAndClose();
+    // Swap faculty photo if provided
+    if (facultyPhoto) {
+      Logger.log('Swapping faculty photo: ' + facultyPhoto);
+      try {
+        var photoBlob = _fetchImageBlob(facultyPhoto);
+        if (photoBlob) {
+          var photoElement = el[EL.PHOTO];
+          if (photoElement) {
+            // Get dimensions before swap
+            var photoLeft = photoElement.getLeft();
+            var photoTop = photoElement.getTop();
+            var photoWidth = photoElement.getWidth();
+            var photoHeight = photoElement.getHeight();
+            
+            // Remove placeholder
+            photoElement.remove();
+            
+            // Insert and constrain to original size
+            var newPhoto = slide.insertImage(photoBlob, photoLeft, photoTop, photoWidth, photoHeight);
+            newPhoto.setLeft(photoLeft);
+            newPhoto.setTop(photoTop);
+            newPhoto.setWidth(photoWidth);
+            newPhoto.setHeight(photoHeight);
+            
+            Logger.log('Faculty photo swapped successfully');
+          } else {
+            Logger.log('Photo element not found');
+          }
+        } else {
+          Logger.log('Failed to fetch photo blob');
+        }
+      } catch (e) {
+        Logger.log('Photo swap failed: ' + e.message);
+      }
+    }
+    
     var presId  = copy.getId();
     var slideId = slide.getObjectId();
 
-    _setTextAutoFit(presId, [EL.COURSE_NAME, EL.TITLE_EN, EL.TITLE_HI, EL.FACULTY_NAME, EL.EXPERIENCE]);
+    // Apply autofit BEFORE closing
+    _setTextAutoFit(presId, [EL.COURSE_NAME, EL.TITLE_EN, EL.TITLE_HI, EL.FACULTY_NAME, expElementId]);
+
+    // Save changes after all modifications
+    pres.saveAndClose();
 
     var folder = _getOrCreateFolder(OUTPUT_FOLDER_NAME);
     if (folder) { folder.addFile(copy); DriveApp.getRootFolder().removeFile(copy); }
@@ -207,18 +295,48 @@ function generateTitleSlide(formData) {
   }
 }
 
-// ── HELPERS ─────────────────────────────────────────────────
+// HELPERS
 function _setText(element, text) {
   if (!element) return;
-  try { element.asShape().getText().setText(text || ''); } catch (_) {}
+  try { 
+    var cleanText = _stripHtml(text || '');
+    element.asShape().getText().setText(cleanText); 
+  } catch (_) {}
+}
+
+function _stripHtml(html) {
+  if (!html) return '';
+  var text = html.toString();
+  text = text.replace(/<[^>]*>/g, '');
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&apos;/g, "'");
+  text = text.replace(/\s+/g, ' ');
+  return text.trim();
 }
 
 function _swapImage(slide, element, blob) {
-  if (!element || !blob) return;
-  var l = element.getLeft(), t = element.getTop();
-  var w = element.getWidth(), h = element.getHeight();
-  element.remove();
-  slide.insertImage(blob, l, t, w, h);
+  if (!element || !blob) {
+    Logger.log('_swapImage skipped - element: ' + !!element + ', blob: ' + !!blob);
+    return null;
+  }
+  try {
+    var l = element.getLeft(), t = element.getTop();
+    var w = element.getWidth(), h = element.getHeight();
+    var oldId = element.getObjectId();
+    Logger.log('Swapping element ' + oldId + ' at L:' + l + ' T:' + t);
+    element.remove();
+    var newImage = slide.insertImage(blob, l, t, w, h);
+    Logger.log('Inserted new image, ID: ' + newImage.getObjectId());
+    return newImage;
+  } catch (e) {
+    Logger.log('_swapImage error: ' + e.message);
+    return null;
+  }
 }
 
 function _exportPng(presId, slideId) {
@@ -228,18 +346,53 @@ function _exportPng(presId, slideId) {
 
 function _fetchImageBlob(ref) {
   var val = (ref || '').trim();
-  if (!val) return null;
+  Logger.log('_fetchImageBlob called with: ' + val);
+  
+  if (!val) {
+    Logger.log('_fetchImageBlob: empty value');
+    return null;
+  }
+  
+  // Fix protocol-relative URLs (//cdn.example.com -> https://cdn.example.com)
+  if (val.indexOf('//') === 0) {
+    val = 'https:' + val;
+    Logger.log('_fetchImageBlob: fixed protocol-relative URL to: ' + val);
+  }
+  
+  // Try to extract Drive file ID
   var m = val.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || val.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
   var fid = m ? m[1] : (/^[a-zA-Z0-9_-]{20,}$/.test(val) ? val : '');
+  
   if (fid) {
-    try { return DriveApp.getFileById(fid).getBlob(); } catch (_) { return null; }
+    Logger.log('_fetchImageBlob: extracted file ID: ' + fid);
+    try {
+      var blob = DriveApp.getFileById(fid).getBlob();
+      Logger.log('_fetchImageBlob: successfully fetched from Drive');
+      return blob;
+    } catch (e) {
+      Logger.log('_fetchImageBlob: Drive fetch failed: ' + e.message);
+      return null;
+    }
   }
+  
+  // Try as direct URL
   if (/^https?:\/\//i.test(val)) {
+    Logger.log('_fetchImageBlob: trying as direct URL');
     try {
       var r = UrlFetchApp.fetch(val, { muteHttpExceptions: true, followRedirects: true });
-      if (r.getResponseCode() === 200) return r.getBlob();
-    } catch (_) { return null; }
+      var code = r.getResponseCode();
+      Logger.log('_fetchImageBlob: URL fetch response code: ' + code);
+      if (code === 200) {
+        Logger.log('_fetchImageBlob: successfully fetched from URL');
+        return r.getBlob();
+      }
+    } catch (e) {
+      Logger.log('_fetchImageBlob: URL fetch failed: ' + e.message);
+      return null;
+    }
   }
+  
+  Logger.log('_fetchImageBlob: no valid format found');
   return null;
 }
 
@@ -267,8 +420,12 @@ function _setTextAutoFit(presId, objectIds) {
         return {
           updateShapeProperties: {
             objectId: id,
-            shapeProperties: { autofit: { autofitType: 'TEXT_AUTOFIT' } },
-            fields: 'autofit'
+            shapeProperties: { 
+              autofit: { 
+                autofitType: 'SHAPE_AUTOFIT' 
+              } 
+            },
+            fields: 'shapeProperties.autofit'
           }
         };
       });
@@ -276,4 +433,212 @@ function _setTextAutoFit(presId, objectIds) {
   } catch (e) {
     Logger.log('Auto-fit (non-fatal): ' + e.message);
   }
+}
+
+
+// ── DIAGNOSTIC FUNCTIONS ────────────────────────────────────
+function diagnoseTemplateElements() {
+  try {
+    var pres = SlidesApp.openById(TEMPLATE_PRESENTATION_ID);
+    var slides = pres.getSlides();
+    
+    var targetSlide = null;
+    for (var i = 0; i < slides.length; i++) {
+      if (slides[i].getObjectId() === TEMPLATE_SLIDE_ID) {
+        targetSlide = slides[i];
+        break;
+      }
+    }
+    
+    if (!targetSlide) {
+      Logger.log('ERROR: Template slide not found');
+      return 'ERROR: Template slide not found';
+    }
+    
+    var elements = targetSlide.getPageElements();
+    Logger.log('=== ALL ELEMENTS IN TEMPLATE ===');
+    Logger.log('Total elements: ' + elements.length + '\n');
+    
+    var report = [];
+    
+    for (var j = 0; j < elements.length; j++) {
+      var el = elements[j];
+      var id = el.getObjectId();
+      var type = el.getPageElementType();
+      var left = el.getLeft();
+      var top = el.getTop();
+      var width = el.getWidth();
+      var height = el.getHeight();
+      
+      var info = 'Element ' + j + ':\n' +
+                 '  ID: ' + id + '\n' +
+                 '  Type: ' + type + '\n' +
+                 '  Position: L=' + left.toFixed(1) + ' T=' + top.toFixed(1) + '\n' +
+                 '  Size: W=' + width.toFixed(1) + ' H=' + height.toFixed(1);
+      
+      if (type == SlidesApp.PageElementType.SHAPE) {
+        try {
+          var text = el.asShape().getText().asString();
+          info += '\n  Text: "' + text.substring(0, 50) + (text.length > 50 ? '...' : '') + '"';
+        } catch (e) {}
+      }
+      
+      // Check if this matches our expected IDs
+      var matched = '';
+      if (id === EL.COURSE_NAME) matched = ' [COURSE_NAME]';
+      if (id === EL.TITLE_EN) matched = ' [TITLE_EN]';
+      if (id === EL.TITLE_HI) matched = ' [TITLE_HI]';
+      if (id === EL.FACULTY_NAME) matched = ' [FACULTY_NAME]';
+      if (id === EL.EXPERIENCE) matched = ' [EXPERIENCE]';
+      if (id === EL.LOGO) matched = ' [LOGO]';
+      if (id === EL.PHOTO) matched = ' [PHOTO]';
+      
+      info += matched;
+      
+      Logger.log(info + '\n');
+      report.push(info);
+    }
+    
+    Logger.log('\n=== EXPECTED ELEMENT IDs ===');
+    Logger.log('COURSE_NAME: ' + EL.COURSE_NAME);
+    Logger.log('TITLE_EN: ' + EL.TITLE_EN);
+    Logger.log('TITLE_HI: ' + EL.TITLE_HI);
+    Logger.log('FACULTY_NAME: ' + EL.FACULTY_NAME);
+    Logger.log('EXPERIENCE: ' + EL.EXPERIENCE);
+    Logger.log('LOGO: ' + EL.LOGO);
+    Logger.log('PHOTO: ' + EL.PHOTO);
+    
+    return 'Check logs for details';
+    
+  } catch (e) {
+    Logger.log('ERROR: ' + e.message);
+    return 'ERROR: ' + e.message;
+  }
+}
+
+
+// TEST FUNCTION - Test image swapping with sample data
+function testImageSwap() {
+  var testData = {
+    titleEn: 'Test Topic',
+    titleHi: 'परीक्षण विषय',
+    courseName: 'Test Course',
+    facultyName: 'Test Faculty',
+    achievement: 'Test experience text',
+    // Test with protocol-relative URL (like your actual data)
+    facultyPhoto: '//cdn.testbook.com/resources/productionimages/Capture%20-%20Anahad%20Sharma%20_All_1649772456.png',
+    // Use Supercoaching logo
+    logoFileId: '1uk0WDNEixfIVXiVFKC74RIZqN_ZyJBHT'
+  };
+  
+  Logger.log('Running test with protocol-relative URL for faculty photo...');
+  var result = generateTitleSlide(testData);
+  Logger.log('Test result: ' + JSON.stringify(result));
+  
+  if (result.success) {
+    Logger.log('SUCCESS! Check the slide at: ' + result.url);
+    Logger.log('You should see:');
+    Logger.log('  - Supercoaching logo at bottom-left');
+    Logger.log('  - Faculty photo at top-right');
+  } else {
+    Logger.log('FAILED: ' + result.error);
+  }
+  
+  return result;
+}
+
+
+// TEST FUNCTION - Check faculty photo URLs from sheet
+function checkFacultyPhotos() {
+  try {
+    var facResp = Sheets.Spreadsheets.Values.get(SPREADSHEET_ID, FACULTY_SHEET + '!A1:Z');
+    var facData = facResp.values || [];
+    var header  = facData.length ? facData[0] : [];
+    
+    var nameIdx = 0, photoIdx = -1;
+    
+    for (var h = 0; h < header.length; h++) {
+      var k = (header[h] || '').toString().trim().toLowerCase();
+      if (k === 'name' || k === 'faculty name' || k === '_id') nameIdx = h;
+      if (k === 'photo' || k === 'faculty photo' || k === 'image') photoIdx = h;
+    }
+    
+    Logger.log('Photo column index: ' + photoIdx);
+    Logger.log('\n=== FACULTY PHOTOS (first 5) ===');
+    
+    for (var i = 1; i < Math.min(6, facData.length); i++) {
+      var row = facData[i] || [];
+      var name = (row[nameIdx] || '').toString().trim();
+      var photo = photoIdx >= 0 ? (row[photoIdx] || '').toString().trim() : '';
+      
+      Logger.log('\nFaculty: ' + name);
+      Logger.log('Photo URL: ' + photo);
+      
+      if (photo) {
+        var blob = _fetchImageBlob(photo);
+        Logger.log('Blob fetch result: ' + (blob ? 'SUCCESS' : 'FAILED'));
+      }
+    }
+    
+    return 'Check logs';
+  } catch (e) {
+    Logger.log('ERROR: ' + e.message);
+    return 'ERROR: ' + e.message;
+  }
+}
+
+
+// TEST FUNCTION - Verify both logos are accessible
+function testBothLogos() {
+  Logger.log('=== TESTING BOTH LOGOS ===\n');
+  
+  for (var i = 0; i < BUILT_IN_LOGOS.length; i++) {
+    var logo = BUILT_IN_LOGOS[i];
+    Logger.log('Testing: ' + logo.name);
+    Logger.log('File ID: ' + logo.id);
+    
+    try {
+      var file = DriveApp.getFileById(logo.id);
+      Logger.log('✓ File found: ' + file.getName());
+      Logger.log('  MIME type: ' + file.getMimeType());
+      Logger.log('  Size: ' + file.getSize() + ' bytes');
+      
+      var blob = file.getBlob();
+      Logger.log('✓ Blob fetched successfully');
+      Logger.log('  Content type: ' + blob.getContentType());
+      
+    } catch (e) {
+      Logger.log('✗ ERROR: ' + e.message);
+    }
+    Logger.log('');
+  }
+  
+  // Now test generating slides with each logo
+  Logger.log('\n=== TESTING SLIDE GENERATION WITH EACH LOGO ===\n');
+  
+  for (var j = 0; j < BUILT_IN_LOGOS.length; j++) {
+    var testLogo = BUILT_IN_LOGOS[j];
+    Logger.log('Generating slide with: ' + testLogo.name);
+    
+    var testData = {
+      titleEn: 'Test with ' + testLogo.name,
+      titleHi: 'परीक्षण',
+      courseName: 'Test Course',
+      facultyName: 'Test Faculty',
+      achievement: 'Test experience',
+      facultyPhoto: '//cdn.testbook.com/resources/productionimages/Capture%20-%20Anahad%20Sharma%20_All_1649772456.png',
+      logoFileId: testLogo.id
+    };
+    
+    var result = generateTitleSlide(testData);
+    
+    if (result.success) {
+      Logger.log('✓ SUCCESS: ' + result.url);
+    } else {
+      Logger.log('✗ FAILED: ' + result.error);
+    }
+    Logger.log('');
+  }
+  
+  return 'Check logs for details';
 }

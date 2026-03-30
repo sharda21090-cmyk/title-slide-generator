@@ -140,13 +140,30 @@ function pvAutoSize(el, basePx, minPx, threshold) {
   el.style.fontSize = size + 'px';
 }
 
+// Strip HTML tags and entities
+function stripHtml(html) {
+  if (!html) return '';
+  
+  // Create a temporary div to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  // Get text content (automatically strips all HTML)
+  let text = temp.textContent || temp.innerText || '';
+  
+  // Clean up extra whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  return text;
+}
+
 // Update preview
 function updatePreview() {
   const course = selectedCourse;
   const en = enInput.value.trim();
   const hi = hiInput.value.trim();
   const name = selectedFaculty;
-  const exp = expInput.value.trim();
+  const exp = stripHtml(expInput.value.trim());
 
   const pvCourse = document.getElementById('pvCourse');
   const pvEn = document.getElementById('pvEn');
@@ -210,8 +227,12 @@ async function init() {
 
       // Setup faculty dropdown
       const facItems = (data.faculties || []).map(f => {
+        // Strip HTML and limit experience length
+        const cleanExp = stripHtml(f.achievement || '');
+        const limitedExp = cleanExp.length > 150 ? cleanExp.substring(0, 147) + '...' : cleanExp;
+        
         facultyMap[f.name] = {
-          experience: f.achievement || '',
+          experience: limitedExp,
           photo: f.photo || ''
         };
         return { label: f.name, value: f.name };
@@ -223,8 +244,14 @@ async function init() {
         const icon = document.getElementById('pvPhotoIcon');
         
         if (v && facultyMap[v]) {
+          // Experience is already cleaned and limited
           expInput.value = facultyMap[v].experience || '';
-          const photo = (facultyMap[v].photo || '').trim();
+          let photo = (facultyMap[v].photo || '').trim();
+          
+          // Fix protocol-relative URLs
+          if (photo.startsWith('//')) {
+            photo = 'https:' + photo;
+          }
           
           if (photo) {
             img.src = photo;
@@ -328,9 +355,20 @@ document.getElementById('slideForm').addEventListener('submit', async (e) => {
     titleHi: hiInput.value.trim(),
     facultyName,
     achievement: expInput.value.trim(),
-    facultyPhoto: (facultyMap[facultyName] && facultyMap[facultyName].photo) || '',
+    facultyPhoto: (() => {
+      let photo = (facultyMap[facultyName] && facultyMap[facultyName].photo) || '';
+      // Fix protocol-relative URLs
+      if (photo.startsWith('//')) {
+        photo = 'https:' + photo;
+      }
+      return photo;
+    })(),
     logoFileId: logoSelect.value
   };
+  
+  console.log('Sending formData:', formData);
+  console.log('Experience value:', formData.achievement);
+  console.log('Photo URL:', formData.facultyPhoto);
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
