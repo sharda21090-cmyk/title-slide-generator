@@ -12,7 +12,6 @@ var COURSE_SHEET             = 'AllCourse';
 var TEMPLATE_PRESENTATION_ID = '1v2hScTPtBkXVJq_swTFcwnIn_BdAr-DofBOOO7ozpfk';
 var TEMPLATE_SLIDE_ID        = 'g3d776b36914_4_75';
 var OUTPUT_FOLDER_NAME       = 'Supercoaching Title Slides';
-var GEMINI_API_KEY           = ''; // Add your Gemini API key here for auto-translation
 
 var EL = {
   COURSE_NAME:  'g3d7e9597ed0_1_1',
@@ -163,13 +162,6 @@ function generateTitleSlide(formData) {
     var facultyName  = (formData.facultyName || '').trim() || 'Faculty';
     var experience   = (formData.achievement || formData.experience || '').trim();
     var facultyPhoto = (formData.facultyPhoto || '').trim();
-    
-    // Auto-translate to Hindi if not provided and API key is configured
-    if (!titleHi && GEMINI_API_KEY && titleEn) {
-      Logger.log('Auto-translating title to Hindi...');
-      titleHi = _translateToHindi(titleEn);
-      Logger.log('Translated title: ' + titleHi);
-    }
     
     Logger.log('Parsed values:');
     Logger.log('  - Experience: ' + experience);
@@ -678,44 +670,4 @@ function testBothLogos() {
   }
   
   return 'Check logs for details';
-}
-
-
-// TRANSLATION HELPER
-function _translateToHindi(text) {
-  if (!GEMINI_API_KEY || !text) return '';
-  
-  try {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY;
-    
-    var payload = {
-      contents: [{
-        parts: [{
-          text: 'Translate the following English text to Hindi. Preserve bullet points and formatting. Only return the Hindi translation, nothing else:\n\n' + text
-        }]
-      }]
-    };
-    
-    var options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-    
-    var response = UrlFetchApp.fetch(url, options);
-    var result = JSON.parse(response.getContentText());
-    
-    if (result.candidates && result.candidates[0] && result.candidates[0].content) {
-      var translatedText = result.candidates[0].content.parts[0].text;
-      return translatedText.trim();
-    }
-    
-    Logger.log('Translation failed: No valid response');
-    return '';
-    
-  } catch (e) {
-    Logger.log('Translation error: ' + e.message);
-    return '';
-  }
 }
