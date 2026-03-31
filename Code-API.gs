@@ -308,25 +308,29 @@ function _setText(element, text) {
 
 function _stripHtml(html) {
   if (!html) return '';
+  
   var text = html.toString();
   
-  // First, handle list items - add newline before each bullet
+  // --- LIST HANDLING (FIXED) ---
+  // Ensure every bullet starts on a new line
   text = text.replace(/<li[^>]*>/gi, '\n• ');
   text = text.replace(/<\/li>/gi, '');
   
-  // Handle other block elements
+  // Remove opening list tags, add spacing after list
+  text = text.replace(/<ul[^>]*>/gi, '');
+  text = text.replace(/<\/ul>/gi, '\n');
+  text = text.replace(/<ol[^>]*>/gi, '');
+  text = text.replace(/<\/ol>/gi, '\n');
+  
+  // --- BLOCK ELEMENTS ---
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n');
   text = text.replace(/<p[^>]*>/gi, '');
-  text = text.replace(/<ul[^>]*>/gi, '');
-  text = text.replace(/<\/ul>/gi, '');
-  text = text.replace(/<ol[^>]*>/gi, '');
-  text = text.replace(/<\/ol>/gi, '');
   
-  // Remove all remaining HTML tags
+  // --- REMOVE REMAINING TAGS ---
   text = text.replace(/<[^>]*>/g, '');
   
-  // Decode ALL HTML entities using a more comprehensive approach
+  // --- HTML ENTITY DECODING ---
   text = text.replace(/&rsquo;/gi, "'");
   text = text.replace(/&lsquo;/gi, "'");
   text = text.replace(/&rdquo;/gi, '"');
@@ -347,11 +351,14 @@ function _stripHtml(html) {
     return String.fromCharCode(dec);
   });
   
-  // Clean up whitespace
-  text = text.replace(/[ \t]+/g, ' ');        // Multiple spaces to single
+  // --- CLEANUP ---
+  text = text.replace(/[ \t]+/g, ' ');        // Multiple spaces → single
   text = text.replace(/\n[ \t]+/g, '\n');     // Remove spaces after newline
   text = text.replace(/[ \t]+\n/g, '\n');     // Remove spaces before newline
   text = text.replace(/\n{3,}/g, '\n\n');     // Max 2 newlines
+  
+  // --- CRITICAL FIX: Ensure bullets are always on new lines ---
+  text = text.replace(/([^\n])•/g, '$1\n•');
   
   return text.trim();
 }
