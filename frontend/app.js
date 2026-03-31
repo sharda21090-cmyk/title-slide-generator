@@ -200,7 +200,7 @@ function stripHtml(html) {
 
 // Update preview
 function updatePreview() {
-  const course = selectedCourse;
+  const course = selectedCourse || document.getElementById('courseSearch').value.trim();
   const en = enInput.value.trim();
   const hi = hiInput.value.trim();
   const name = selectedFaculty;
@@ -265,7 +265,7 @@ async function init() {
         updatePreview();
       });
       document.getElementById('courseSearch').placeholder = 
-        courseItems.length ? `Search ${courseItems.length} courses…` : 'Type a course name';
+        courseItems.length ? `Search ${courseItems.length} courses or type custom name…` : 'Type a course name';
 
       // Setup faculty dropdown
       const facItems = (data.faculties || []).map(f => {
@@ -371,15 +371,25 @@ logoSelect.addEventListener('change', async () => {
   el.addEventListener('input', updatePreview);
 });
 
+// Add listener for custom course text
+document.getElementById('courseSearch').addEventListener('input', (e) => {
+  // If user is typing custom text (not selecting from dropdown)
+  if (!selectedCourse || e.target.value !== selectedCourse) {
+    updatePreview();
+  }
+});
+
 // Form submit
 document.getElementById('slideForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const titleEn = enInput.value.trim();
+  const titleHi = hiInput.value.trim();
   const facultyName = selectedFaculty || document.getElementById('facultySearch').value.trim();
 
-  if (!titleEn) {
-    showStatus('error', 'Please enter the topic title in English.');
+  // At least one title (English or Hindi) is required
+  if (!titleEn && !titleHi) {
+    showStatus('error', 'Please enter at least one topic title (English or Hindi).');
     enInput.focus();
     return;
   }
@@ -428,9 +438,10 @@ document.getElementById('slideForm').addEventListener('submit', async (e) => {
       if (result.pptxUrl) {
         msg += ` &nbsp;|&nbsp; <a href="${result.pptxUrl}" download>Download PowerPoint →</a>`;
       }
-      if (result.pngUrl) {
-        msg += ` &nbsp;|&nbsp; <a href="${result.pngUrl}" target="_blank">Download PNG →</a>`;
-      }
+      // PNG download temporarily disabled
+      // if (result.pngUrl) {
+      //   msg += ` &nbsp;|&nbsp; <a href="${result.pngUrl}" target="_blank">Download PNG →</a>`;
+      // }
       showStatus('success', msg);
     } else {
       showStatus('error', `❌ ${result.error}`);

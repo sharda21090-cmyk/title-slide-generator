@@ -156,8 +156,18 @@ function generateTitleSlide(formData) {
     Logger.log('=== GENERATE TITLE SLIDE START ===');
     Logger.log('Received formData: ' + JSON.stringify(formData));
     
-    var titleEn      = (formData.titleEn || '').trim() || 'Untitled Topic';
+    var titleEn      = (formData.titleEn || '').trim();
     var titleHi      = (formData.titleHi || '').trim();
+    
+    // At least one title is required
+    if (!titleEn && !titleHi) {
+      return { success: false, error: 'At least one title (English or Hindi) is required' };
+    }
+    
+    // Use Hindi title as fallback if English is empty, and vice versa
+    if (!titleEn) titleEn = titleHi;
+    if (!titleHi) titleHi = titleEn;
+    
     var courseName   = (formData.courseName || '').trim();
     var facultyName  = (formData.facultyName || '').trim() || 'Faculty';
     var experience   = (formData.achievement || formData.experience || '').trim();
@@ -317,15 +327,17 @@ function _stripHtml(html) {
   text = text.replace(/<\/li>/gi, '');
   
   // Remove opening list tags, add spacing after list
-  text = text.replace(/<ul[^>]*>/gi, '');
+  text = text.replace(/<ul[^>]*>/gi, '\n');
   text = text.replace(/<\/ul>/gi, '\n');
-  text = text.replace(/<ol[^>]*>/gi, '');
+  text = text.replace(/<ol[^>]*>/gi, '\n');
   text = text.replace(/<\/ol>/gi, '\n');
   
   // --- BLOCK ELEMENTS ---
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n');
   text = text.replace(/<p[^>]*>/gi, '');
+  text = text.replace(/<div[^>]*>/gi, '\n');
+  text = text.replace(/<\/div>/gi, '\n');
   
   // --- REMOVE REMAINING TAGS ---
   text = text.replace(/<[^>]*>/g, '');
@@ -358,6 +370,7 @@ function _stripHtml(html) {
   text = text.replace(/\n{3,}/g, '\n\n');     // Max 2 newlines
   
   // --- CRITICAL FIX: Ensure bullets are always on new lines ---
+  // This catches any bullet that doesn't have a newline before it
   text = text.replace(/([^\n])•/g, '$1\n•');
   
   return text.trim();
